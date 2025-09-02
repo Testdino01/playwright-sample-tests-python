@@ -5,3 +5,4 @@ pytest-rerunfailures
 pytest-xdist
 pytest-html
 pytest-json-report
+python-dotenv

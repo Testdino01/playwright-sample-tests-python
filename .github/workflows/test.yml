@@ -1,74 +1,53 @@
-# .github/workflows/playwright-daily.yml
-# Runs Playwright (Python + pytest) tests daily at 11:42 AM IST (06:12 UTC)
-# plus on push, PRs, and manual trigger
-
-name: Run Playwright Python Tests
+name: Playwright Python Tests
 
 on:
-  push:          # runs on every push
-  pull_request:  # runs on new PRs or PR updates
-  schedule:
-    - cron: '30 3 * * 1-5'
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
-  run-tests:
-    name: Run Playwright Python Tests
+  tests:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.9'
 
-      - name: Create .env file
-        run: |
-          echo "USERNAME=${{ secrets.USERNAME }}" >> .env
-          echo "PASSWORD=${{ secrets.PASSWORD }}" >> .env
-          echo "NEW_PASSWORD=${{ secrets.NEW_PASSWORD }}" >> .env
-          echo "FIRST_NAME=${{ secrets.FIRST_NAME }}" >> .env
-          echo "STREET_NAME=${{ secrets.STREET_NAME }}" >> .env
-          echo "CITY=${{ secrets.CITY }}" >> .env
-          echo "STATE=${{ secrets.STATE }}" >> .env
-          echo "COUNTRY=${{ secrets.COUNTRY }}" >> .env
-          echo "ZIP_CODE=${{ secrets.ZIP_CODE }}" >> .env
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install deps + browsers
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          playwright install --with-deps
+          # install Playwright browsers
+          python -m playwright install --with-deps
 
-      - name: Run pytest Playwright tests
+      - name: Run Playwright Tests with pytest
         run: |
-          pytest -v \
-            --reruns 1 \
-            --html=playwright-report/report.html \
-            --json-report \
-            --json-report-file=playwright-report/report.json
+          pytest tests/ --junitxml=test-results/junit-report.xml --html=test-results/report.html --self-contained-html
 
-      - name: Upload test reports
-        if: ${{ !cancelled() }}
+      - name: Upload Test Report (JUnit)
         uses: actions/upload-artifact@v4
         with:
-          name: Playwright Python Test Report
-          path: ./playwright-report
-          retention-days: 14
+          name: junit-report
+          path: test-results/junit-report.xml
 
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: test-results/report.html
+
+      # ✅ TestDino Integration
       - name: Send TestDino report
         run: |
-          npx --yes tdpw ./playwright-report \
-            --token="trx_production_b0b86d5f044ecfa1d02cbdfa2f9d644dd7e4889912e0494b802abfe8f251db8e" \
-            --upload-html \
-            --verbose
+         npx --yes tdpw ./playwright-report \
+           --token="${{ secrets.TESTDINO_TOKEN }}" \
+           --upload-html \
+           --verbose
