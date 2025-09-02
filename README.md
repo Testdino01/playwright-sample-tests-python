@@ -1,30 +1,32 @@
 # alphabin-demo-test-playwright
 
-Automated end-to-end tests for [Alphabin Demo](https://demo.alphabin.co/) using [Playwright](https://playwright.dev/).
+Automated end-to-end tests for [Alphabin Demo](https://demo.alphabin.co/) using [Playwright Python](https://playwright.dev/python/).
 
 ---
 
 ## Project Structure
 
-- `pages/` — Page Object Models
-- `tests/` — Test specifications
-- `playwright.config.js` — Playwright configuration
-- `playwright-report/` — HTML test reports
-- `.github/workflows/test.yml` — CI/CD pipeline
+- `pages/` — Page Object Models (Python classes)
+- `tests/` — Test specifications (`pytest` test files)
+- `playwright-report/` — HTML and JSON test reports
+- `.github/workflows/test.yml` — CI/CD pipeline (GitHub Actions)
+- `conftest.py` — Pytest and Playwright fixtures/configuration
 
 ---
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) v16+
-- [npm](https://www.npmjs.com/)
+- [Python](https://www.python.org/) 3.9+
+- [pip](https://pip.pypa.io/en/stable/)
 
 ---
 
 ## Installation
 
 ```sh
-npm install
+python -m pip install --upgrade pip
+pip install pytest pytest-playwright pytest-html pytest-json-report python-dotenv
+python -m playwright install
 ```
 
 ---
@@ -33,13 +35,23 @@ npm install
 
 Run all tests:
 ```sh
-npx playwright test
+pytest
 ```
 
-View the HTML report:
+Run tests with HTML and JSON reports:
 ```sh
-npx playwright show-report
+pytest --html=playwright-report/report.html --json-report --json-report-file=playwright-report/report.json
 ```
+
+---
+
+## Viewing Reports
+
+Open the HTML report after test run:
+```sh
+open playwright-report/report.html
+```
+*(On Windows use `start`, on Linux use `xdg-open`)*
 
 ---
 
@@ -47,15 +59,13 @@ npx playwright show-report
 
 [Testdino](https://testdino.com/) enables cloud-based Playwright reporting.
 
-### Local Execution
-
 After your tests complete and the report is generated in `playwright-report`, upload it to Testdino:
 
 ```sh
 npx --yes tdpw ./playwright-report --token="your-token" --upload-html
 ```
 
-Replace the token above with your own Testdino API key.
+Replace `"your-token"` with your own Testdino API key.
 
 See all available commands:
 ```sh
@@ -73,7 +83,7 @@ Add the following step to your workflow after tests and report generation:
 ```yaml
 - name: Send Testdino report
   run: |
-    npx --yes tdpw ./playwright-report --token="trx_production_035e6ed4a1a2be1f5a10eb45b837afa25b2740cc8b94ff8baca31ee3fe5e2d15" --upload-html
+    npx --yes tdpw ./playwright-report --token="your-token" --upload-html
 ```
 
 Ensure your API key is correctly placed in the command.
