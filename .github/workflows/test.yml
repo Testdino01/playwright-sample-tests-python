@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         shardIndex: [1, 2, 3]
-        shardTotal: [3]   # Adjust depending on how many shards you want
+        shardTotal: [3]
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
 
       - name: Run pytest shard ${{ matrix.shardIndex }}
         run: |
-          pytest tests/ \
+          python -m pytest tests/ \
             --maxfail=2 \
             --dist=loadscope \
             --tx ${{ matrix.shardTotal }}*popen \
@@ -92,10 +92,19 @@ jobs:
       - name: Merge reports
         run: |
           mkdir -p playwright-report
-          # Merge JSON reports into one
-          jq -s 'reduce .[] as $item ({}; . * $item)' ./all-reports/**/*.json > playwright-report/report.json
-          # Pick first HTML as final (pytest-html doesn’t support merging natively)
-          cp ./all-reports/**/report.html playwright-report/report.html || true
+          # Merge JSON reports safely
+          if ls ./all-reports/*.json 1> /dev/null 2>&1; then
+            find ./all-reports -name "*.json" -print0 | xargs -0 jq -s 'reduce .[] as $item ({}; . * $item)' > playwright-report/report.json
+          else
+            echo '{}' > playwright-report/report.json
+          fi
+          # Pick the first HTML file as final
+          first_html=$(find ./all-reports -name "report.html" | head -n 1)
+          if [ -n "$first_html" ]; then
+            cp "$first_html" playwright-report/report.html
+          else
+            echo "<h1>No HTML report found</h1>" > playwright-report/report.html
+          fi
 
       - name: Upload combined report
         uses: actions/upload-artifact@v4
@@ -107,6 +116,7 @@ jobs:
       - name: Send TestDino report
         run: |
           npx --yes tdpw ./playwright-report \
-            --token="${{ secrets.TESTDINO_TOKEN }}" \
+            --token="trx_production_6cc63087ffc16b0398ce7ae40f3884807bcdc3ebaea0a304cc1917e98a5d8a8c" \
             --upload-html \
+            --json-report=./playwright-report/report.json \
             --verbose
