@@ -115,7 +115,7 @@ jobs:
       - name: Send TestDino report
         run: |
           npx --yes tdpw ./playwright-report \
-            --token="${{ secrets.TESTDINO_TOKEN }}" \
+            --token="trx_production_b0b86d5f044ecfa1d02cbdfa2f9d644dd7e4889912e0494b802abfe8f251db8e" \
             --upload-html \
             --json-report=./playwright-report/report.json \
             --html-report=./playwright-report/html-report \
