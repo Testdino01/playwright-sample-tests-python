@@ -120,4 +120,5 @@ jobs:
             --token="trx_production_6cc63087ffc16b0398ce7ae40f3884807bcdc3ebaea0a304cc1917e98a5d8a8c" \
             --upload-html \
             --json-report=./playwright-report/report.json \
+            --html-report=./playwright-report/report.html \
             --verbose
