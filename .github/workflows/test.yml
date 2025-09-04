@@ -2,7 +2,7 @@ name: Run Playwright Python Tests
 
 on:
   schedule:
-    - cron: '30 3 * * 1-5'
+    - cron: '30 3 * * 1-5' # Runs weekdays at 09:00 IST (03:30 UTC)
   workflow_dispatch:
 
 jobs:
@@ -49,16 +49,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install python-dotenv
           playwright install --with-deps
 
       - name: Run pytest shard ${{ matrix.shardIndex }}
-        env:
-          # Expose env vars directly too, in case tests don't use dotenv
-          USERNAME: ${{ secrets.USERNAME }}
-          PASSWORD: ${{ secrets.PASSWORD }}
         run: |
-          python -m pytest tests/ \
+          pytest tests/ \
             --maxfail=2 \
             --dist=loadscope \
             --tx ${{ matrix.shardTotal }}*popen \
@@ -93,18 +88,21 @@ jobs:
       - name: Merge reports
         run: |
           mkdir -p playwright-report
-          # Merge JSON reports safely
-          if ls ./all-reports/*.json 1> /dev/null 2>&1; then
+
+          # Merge JSON reports
+          if ls ./all-reports/*.json >/dev/null 2>&1; then
             find ./all-reports -name "*.json" -print0 | xargs -0 jq -s 'reduce .[] as $item ({}; . * $item)' > playwright-report/report.json
           else
             echo '{}' > playwright-report/report.json
           fi
-          # Pick the first HTML file as final
+
+          # Pick the first HTML as index.html
+          mkdir -p playwright-report/html-report
           first_html=$(find ./all-reports -name "report.html" | head -n 1)
           if [ -n "$first_html" ]; then
-            cp "$first_html" playwright-report/report.html
+            cp "$first_html" playwright-report/html-report/index.html
           else
-            echo "<h1>No HTML report found</h1>" > playwright-report/report.html
+            echo "<h1>No HTML report found</h1>" > playwright-report/html-report/index.html
           fi
 
       - name: Upload combined report
@@ -117,8 +115,8 @@ jobs:
       - name: Send TestDino report
         run: |
           npx --yes tdpw ./playwright-report \
-            --token="trx_production_6cc63087ffc16b0398ce7ae40f3884807bcdc3ebaea0a304cc1917e98a5d8a8c" \
+            --token="${{ secrets.TESTDINO_TOKEN }}" \
             --upload-html \
             --json-report=./playwright-report/report.json \
-            --html-report=./playwright-report/report.html \
+            --html-report=./playwright-report/html-report \
             --verbose
