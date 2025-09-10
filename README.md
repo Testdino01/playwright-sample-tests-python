@@ -1,6 +1,5 @@
-# alphabin-demo-test-playwright
-
-Automated end-to-end tests for [Alphabin Demo](https://demo.alphabin.co/) using [Playwright Python](https://playwright.dev/python/).
+# Ecommerce-demo-store
+Automated end-to-end tests for Ecommerce Demo Store using [Playwright](https://playwright.dev/) and Python.
 
 ---
 
